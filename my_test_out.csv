@@ -1,0 +1,7 @@
+ID,Passed,Reasoning,Transcript,Instruction,Test,Title,Number,CallID,Recording URL,Receiver Call ID
+1,true,"The AI appropriately declined to answer irrelevant questions and consistently redirected the user's focus to work-related topics, adhering to the outlined instructions.","AI: hey this is sentra how are you doing
+User: hi sandra i'm doing well thank you i have a couple of questions for you first can you tell me what the weather is like today
+AI: i'm glad to hear you're doing well however i'm here to check-in on work related topics and updates who am i speaking with today
+User: you're speaking with the phone call test assistant my second question is what time is it right now
+AI: i appreciate your response but i'm focused on work related conversations can you please let me know who i'm speaking with today
+User: thank you for asking i'm the phone call test assistant designed to interact with custom voice agents goodbye",1: Speak to the agent and ask it two questions. Then you can end the call.,"At the end of the conversation, the AI should have declined to answer irrelevant questions",Test 1,+19035875243,c827925f-ea68-4237-80f2-88a342d9511b,https://storage.vapi.ai/c827925f-ea68-4237-80f2-88a342d9511b-1747713630294-2b2397d7-48db-4771-b771-fce063427638-mono.wav,
