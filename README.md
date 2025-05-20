@@ -39,7 +39,7 @@ This project provides a script for running automated tests against voice agents.
 
 ## Usage
 
-1. Create a CSV file with test cases in the following format:
+1. Create a CSV file with test cases in the following format (an example `my_test.csv` is provided in the repo):
    ```
    ID,Number,Title,Instruction,NumTest,Test1,Test2,...
    1,+11234567890,Test Title,Test instruction for the voice agent,1,Expected behavior 1,...
