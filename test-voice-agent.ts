@@ -211,6 +211,14 @@ const runTest = async (
             }),
           },
         ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "endCall",
+            },
+          },
+        ],
       },
       startSpeakingPlan: {
         waitSeconds: 2,
