@@ -39,13 +39,53 @@ interface TestRecord {
   [key: string]: string; // For dynamic test fields (test1, test2, etc.)
 }
 
+// Add language configuration mapping
+const languageConfigs = {
+  en: {
+    voice: {
+      voiceId: '9BWtsMINqrJLrRacOk9x', // English voice
+    },
+    transcriber: {
+      language: 'en',
+    },
+    endCallPhrases: ['goodbye', 'bye'],
+  },
+  es: {
+    voice: {
+      voiceId: 'TxGEqnHWrfWFTfGW9XjX', // Spanish voice
+    },
+    transcriber: {
+      language: 'es',
+    },
+    endCallPhrases: ['adiós', 'chao', 'hasta luego'],
+  },
+  pt: {
+    voice: {
+      voiceId: 'NGS0ZsC7j4t4dCWbPdgO', // Portuguese voice
+    },
+    transcriber: {
+      language: 'pt',
+    },
+    endCallPhrases: ['tchau', 'adeus', 'até mais', 'até logo', 'até breve'],
+  },
+} as const;
+
+type SupportedLanguage = keyof typeof languageConfigs;
+
 const main = async () => {
   const args = process.argv.slice(2);
   if (args.length < 1) {
-    console.error("Usage: npx ts-node test-voice-agent.ts <inputCsvPath>");
+    console.error("Usage: npx ts-node test-voice-agent.ts <inputCsvPath> [language]");
+    console.error("Supported languages: en (English), es (Spanish), pt (Portuguese)");
     process.exit(1);
   }
-  const [inputCsvPath] = args;
+  const [inputCsvPath, language = 'en'] = args;
+
+  if (!Object.keys(languageConfigs).includes(language)) {
+    console.error(`Unsupported language: ${language}`);
+    console.error("Supported languages: en (English), es (Spanish), pt (Portuguese)");
+    process.exit(1);
+  }
 
   // Extract the filename without path and extension
   const inputFileName =
@@ -90,7 +130,7 @@ const main = async () => {
   const allResultsArrays = await Promise.all(
     records.map(async (record) => {
       console.log("running test for ", record.id);
-      return runTests(record);
+      return runTests(record, language as SupportedLanguage);
     })
   );
 
@@ -148,7 +188,8 @@ When you want to hang up the call, please say "goodbye" or "bye", in the languag
 const runTest = async (
   testRecord: TestRecord,
   iteration: number,
-  numTests: number
+  numTests: number,
+  language: SupportedLanguage = 'en'
 ): Promise<TestResultRow[]> => {
   console.log(`Running test iteration ${iteration + 1}/${numTests}`);
   const testResults: TestResultRow[] = [];
@@ -177,33 +218,14 @@ const runTest = async (
       voice: {
         provider: "11labs",
         model: "eleven_multilingual_v2",
-
-        /**
-         * Uncomment the voiceId you want to use
-         */
-        // English voice
-        voiceId: "9BWtsMINqrJLrRacOk9x",
-        // Portuguese voice
-        // voiceId: 'NGS0ZsC7j4t4dCWbPdgO',
+        ...languageConfigs[language].voice,
       },
       transcriber: {
         provider: "deepgram",
         model: "nova-2",
-        /**
-         * Uncomment the language you want to use
-         */
-        // English
-        language: "en",
-        // Portuguese
-        // language: "pt",
+        ...languageConfigs[language].transcriber,
       },
-      /**
-       * Uncomment the end call phrases you want to use
-       */
-      // English end call phrases
-      endCallPhrases: ['goodbye', 'bye'],
-      // Portuguese end call phrases
-      // endCallPhrases: ["tchau", "adeus", "até mais", "até logo", "até breve"],
+      endCallPhrases: languageConfigs[language].endCallPhrases,
       backgroundSound: "off",
     },
   });
@@ -273,12 +295,12 @@ const runTest = async (
   return testResults;
 };
 
-const runTests = async (testRecord: TestRecord) => {
+const runTests = async (testRecord: TestRecord, language: SupportedLanguage = 'en') => {
   const numTests = parseInt(testRecord.numtest);
 
   // Run all tests in parallel
   const testPromises = Array.from({ length: numTests }, (_, i) =>
-    runTest(testRecord, i, numTests)
+    runTest(testRecord, i, numTests, language)
   );
 
   const testResultArrays = await Promise.all(testPromises);
