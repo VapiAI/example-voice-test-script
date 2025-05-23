@@ -1,22 +1,22 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-require('@dotenvx/dotenvx').config();
-import { parse } from 'csv-parse';
-import { readFileSync } from 'fs';
-import { VapiClient } from '@vapi-ai/server-sdk';
-import { Liquid } from 'liquidjs';
-import { OpenAI } from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
-import { z } from 'zod';
-import { createObjectCsvWriter } from 'csv-writer';
-import { createClient } from '@deepgram/sdk';
+require("@dotenvx/dotenvx").config();
+import { parse } from "csv-parse";
+import { readFileSync } from "fs";
+import { VapiClient } from "@vapi-ai/server-sdk";
+import { Liquid } from "liquidjs";
+import { OpenAI } from "openai";
+import { zodResponseFormat } from "openai/helpers/zod";
+import { z } from "zod";
+import { createObjectCsvWriter } from "csv-writer";
+import { createClient } from "@deepgram/sdk";
 
 // the vapi account/number for the test caller
-const VAPI_API_KEY = process.env.VAPI_API_KEY || '';
-const VAPI_NUMBER_ID = process.env.VAPI_NUMBER_ID || '';
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
-const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY || '';
+const VAPI_API_KEY = process.env.VAPI_API_KEY || "";
+const VAPI_NUMBER_ID = process.env.VAPI_NUMBER_ID || "";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY || "";
 
 const vapiClient = new VapiClient({
   token: VAPI_API_KEY,
@@ -42,31 +42,29 @@ interface TestRecord {
 const main = async () => {
   const args = process.argv.slice(2);
   if (args.length < 1) {
-    console.error(
-      'Usage: npx ts-node test-voice-agent.ts <inputCsvPath>',
-    );
+    console.error("Usage: npx ts-node test-voice-agent.ts <inputCsvPath>");
     process.exit(1);
   }
   const [inputCsvPath] = args;
 
   // Extract the filename without path and extension
   const inputFileName =
-    inputCsvPath.split('/').pop()?.replace('.csv', '') || '';
+    inputCsvPath.split("/").pop()?.replace(".csv", "") || "";
   // Generate output path in the same directory as input
   const outputCsvPath = inputCsvPath.replace(
-    inputFileName + '.csv',
-    `${inputFileName}_out.csv`,
+    inputFileName + ".csv",
+    `${inputFileName}_out.csv`
   );
 
   // Read file content
-  const fileContent = readFileSync(inputCsvPath, 'utf-8');
+  const fileContent = readFileSync(inputCsvPath, "utf-8");
 
   // Parse CSV content synchronously
   const records = await new Promise<any[]>((resolve, reject) => {
     parse(
       fileContent,
       {
-        delimiter: ',',
+        delimiter: ",",
         columns: true,
       },
       (err, data) => {
@@ -79,21 +77,21 @@ const main = async () => {
             Object.entries(record).map(([key, value]) => [
               key.toLowerCase(),
               value,
-            ]),
+            ])
           ) as TestRecord;
         });
         resolve(transformedData);
-      },
+      }
     );
   });
 
-  console.log('records: ', records);
+  console.log("records: ", records);
   // Run all records in parallel, each record running its tests in parallel
   const allResultsArrays = await Promise.all(
     records.map(async (record) => {
-      console.log('running test for ', record.id);
+      console.log("running test for ", record.id);
       return runTests(record);
-    }),
+    })
   );
 
   // Flatten results from all records
@@ -103,17 +101,17 @@ const main = async () => {
   const csvWriter = createObjectCsvWriter({
     path: outputCsvPath,
     header: [
-      { id: 'id', title: 'ID' },
-      { id: 'passed', title: 'Passed' },
-      { id: 'reasoning', title: 'Reasoning' },
-      { id: 'transcript', title: 'Transcript' },
-      { id: 'instruction', title: 'Instruction' },
-      { id: 'test', title: 'Test' },
-      { id: 'title', title: 'Title' },
-      { id: 'number', title: 'Number' },
-      { id: 'callID', title: 'CallID' },
-      { id: 'recording_url', title: 'Recording URL' },
-      { id: 'receiver_call_id', title: 'Receiver Call ID' },
+      { id: "id", title: "ID" },
+      { id: "passed", title: "Passed" },
+      { id: "reasoning", title: "Reasoning" },
+      { id: "transcript", title: "Transcript" },
+      { id: "instruction", title: "Instruction" },
+      { id: "test", title: "Test" },
+      { id: "title", title: "Title" },
+      { id: "number", title: "Number" },
+      { id: "callID", title: "CallID" },
+      { id: "recording_url", title: "Recording URL" },
+      { id: "receiver_call_id", title: "Receiver Call ID" },
     ],
   });
   await csvWriter.writeRecords(allResults);
@@ -138,18 +136,19 @@ interface TestResultRow {
 const ASSISTANT_PROMPT_TEMPLATE = `
 You are a phone call test assistant that will help the customer test their custom voice agent. 
 
-You will be given a set of instructions on how to interact with another voice agent in order to test it. Please follow your instruction exactly. 
+You will be given a set of instructions on how to interact with another voice agent in order to test it. Please follow your instruction exactly.
+The instructions may be in a different language than english. Please speak in the language of the instructions.
 
 Here is the instruction, please follow it exactly:
 {{ instruction }}
 
-When you want to hang up the call, please say "goodbye" or "bye".
+When you want to hang up the call, please say "goodbye" or "bye", in the language of the call.
 `;
 
 const runTest = async (
   testRecord: TestRecord,
   iteration: number,
-  numTests: number,
+  numTests: number
 ): Promise<TestResultRow[]> => {
   console.log(`Running test iteration ${iteration + 1}/${numTests}`);
   const testResults: TestResultRow[] = [];
@@ -161,11 +160,11 @@ const runTest = async (
     },
     assistant: {
       model: {
-        provider: 'openai',
-        model: 'gpt-4o-2024-11-20',
+        provider: "openai",
+        model: "gpt-4o-2024-11-20",
         messages: [
           {
-            role: 'system',
+            role: "system",
             content: engine.parseAndRenderSync(ASSISTANT_PROMPT_TEMPLATE, {
               instruction: testRecord.instruction,
             }),
@@ -176,66 +175,100 @@ const runTest = async (
         waitSeconds: 2,
       },
       voice: {
-        provider: '11labs',
-        voiceId: '9BWtsMINqrJLrRacOk9x',
+        provider: "11labs",
+        model: "eleven_multilingual_v2",
+
+        /**
+         * Uncomment the voiceId you want to use
+         */
+        // English voice
+        voiceId: "9BWtsMINqrJLrRacOk9x",
+        // Portuguese voice
+        // voiceId: 'NGS0ZsC7j4t4dCWbPdgO',
       },
       transcriber: {
-        provider: 'azure',
+        provider: "deepgram",
+        model: "nova-2",
+        /**
+         * Uncomment the language you want to use
+         */
+        // English
+        language: "en",
+        // Portuguese
+        // language: "pt",
       },
+      /**
+       * Uncomment the end call phrases you want to use
+       */
+      // English end call phrases
       endCallPhrases: ['goodbye', 'bye'],
-      backgroundSound: 'off',
+      // Portuguese end call phrases
+      // endCallPhrases: ["tchau", "adeus", "até mais", "até logo", "até breve"],
+      backgroundSound: "off",
     },
   });
 
   const callID = response.id;
 
   let callCompleted = false;
+  const max_failed_allowed_attempts = 10;
   while (!callCompleted) {
-    const call = await vapiClient.calls.get(callID);
-    if (call.status === 'ended') {
-      callCompleted = true;
-      console.log('call ended');
-      console.log(call);
+    try {
+      const call = await vapiClient.calls.get(callID);
+      if (call.status === "ended") {
+        callCompleted = true;
+        console.log("call ended");
+        console.log(call);
 
-      const transcription = await deepgram.listen.prerecorded.transcribeUrl(
-        {
-          url: call.artifact?.stereoRecordingUrl,
-        },
-        {
-          model: 'nova-2',
-          multichannel: true,
-        },
-      );
+        const transcription = await deepgram.listen.prerecorded.transcribeUrl(
+          {
+            url: call.artifact?.stereoRecordingUrl,
+          },
+          {
+            model: "nova-2",
+            detect_language: true,
+            multichannel: true,
+          }
+        );
 
-      const formattedTranscript = formatDualChannelTranscript(transcription);
-      const analysis = await analyzeCall(testRecord, formattedTranscript);
+        const formattedTranscript = formatDualChannelTranscript(transcription);
+        const analysis = await analyzeCall(testRecord, formattedTranscript);
 
-      // Generate test result records for each test case
-      for (const [testKey, result] of Object.entries(analysis.results)) {
-        testResults.push({
-          id: testRecord.id,
-          number: testRecord.number,
-          title: testRecord.title,
-          instruction: testRecord.instruction,
-          test: testRecord[testKey as keyof TestRecord] || '',
-          passed: result.passed,
-          reasoning: result.reasoning,
-          callID,
-          // @ts-expect-error wrong type
-          transcript: formattedTranscript,
-          // @ts-expect-error wrong type
-          recording_url: call.artifact?.recordingUrl,
-          phoneCallProviderId: call.phoneCallProviderId,
-        });
+        // Generate test result records for each test case
+        for (const [testKey, result] of Object.entries(analysis.results)) {
+          testResults.push({
+            id: testRecord.id,
+            number: testRecord.number,
+            title: testRecord.title,
+            instruction: testRecord.instruction,
+            test: testRecord[testKey as keyof TestRecord] || "",
+            passed: result.passed,
+            reasoning: result.reasoning,
+            callID,
+            // @ts-expect-error wrong type
+            transcript: formattedTranscript,
+            // @ts-expect-error wrong type
+            recording_url: call.artifact?.recordingUrl,
+            phoneCallProviderId: call.phoneCallProviderId,
+          });
+        }
+
+        console.log(`Test iteration ${iteration + 1} results:`, analysis);
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
       }
-
-      console.log(`Test iteration ${iteration + 1} results:`, analysis);
-    } else {
+    } catch (error) {
+      console.error("Error getting call: ", error);
       await new Promise((resolve) => setTimeout(resolve, 5000));
+      if (failedAttempts >= max_failed_allowed_attempts) {
+        console.error("Max failed attempts reached, aborting");
+        break;
+      }
+      failedAttempts++;
     }
   }
 
-  console.log('test results: ', testResults);
+  console.log("test results: ", testResults);
 
   return testResults;
 };
@@ -245,7 +278,7 @@ const runTests = async (testRecord: TestRecord) => {
 
   // Run all tests in parallel
   const testPromises = Array.from({ length: numTests }, (_, i) =>
-    runTest(testRecord, i, numTests),
+    runTest(testRecord, i, numTests)
   );
 
   const testResultArrays = await Promise.all(testPromises);
@@ -255,13 +288,13 @@ const runTests = async (testRecord: TestRecord) => {
 };
 
 const formatDualChannelTranscript = (transcription: any): string => {
-  console.log('formatting dual channel transcript');
-  console.log('transcription: ', JSON.stringify(transcription, null, 2));
+  console.log("formatting dual channel transcript");
+  console.log("transcription: ", JSON.stringify(transcription, null, 2));
 
   // Check if we have valid channels data
   if (!transcription?.result?.results?.channels?.length) {
-    console.warn('No channel data found in transcription');
-    return 'No transcript available';
+    console.warn("No channel data found in transcription");
+    return "No transcript available";
   }
 
   // Channel 0 is typically the AI/Assistant
@@ -274,8 +307,8 @@ const formatDualChannelTranscript = (transcription: any): string => {
     !aiChannel?.alternatives?.[0]?.words ||
     !userChannel?.alternatives?.[0]?.words
   ) {
-    console.warn('Invalid channel data structure');
-    return 'Invalid transcript data';
+    console.warn("Invalid channel data structure");
+    return "Invalid transcript data";
   }
 
   // Combine all utterances with timestamps into a single array
@@ -283,12 +316,12 @@ const formatDualChannelTranscript = (transcription: any): string => {
     ...aiChannel.alternatives[0].words.map((word: any) => ({
       text: word.word,
       start: word.start,
-      speaker: 'AI',
+      speaker: "AI",
     })),
     ...userChannel.alternatives[0].words.map((word: any) => ({
       text: word.word,
       start: word.start,
-      speaker: 'User',
+      speaker: "User",
     })),
   ];
 
@@ -296,8 +329,8 @@ const formatDualChannelTranscript = (transcription: any): string => {
   allUtterances.sort((a, b) => a.start - b.start);
 
   // Group words by speaker
-  let currentSpeaker = '';
-  let currentUtterance = '';
+  let currentSpeaker = "";
+  let currentUtterance = "";
   const conversationLines: string[] = [];
 
   allUtterances.forEach((utterance) => {
@@ -308,7 +341,7 @@ const formatDualChannelTranscript = (transcription: any): string => {
       currentSpeaker = utterance.speaker;
       currentUtterance = utterance.text;
     } else {
-      currentUtterance += ' ' + utterance.text;
+      currentUtterance += " " + utterance.text;
     }
   });
 
@@ -317,7 +350,7 @@ const formatDualChannelTranscript = (transcription: any): string => {
     conversationLines.push(`${currentSpeaker}: ${currentUtterance.trim()}`);
   }
 
-  return conversationLines.join('\n');
+  return conversationLines.join("\n");
 };
 
 interface CallAnalysis {
@@ -331,7 +364,7 @@ interface CallAnalysis {
 
 const analyzeCall = async (
   testRecord: TestRecord,
-  formattedTranscript: string,
+  formattedTranscript: string
 ): Promise<CallAnalysis> => {
   const analysis: CallAnalysis = {
     results: {},
@@ -339,7 +372,7 @@ const analyzeCall = async (
 
   // Get all test keys (test1, test2, etc) from testRecord
   const testKeys = Object.keys(testRecord).filter((key) =>
-    key.startsWith('test'),
+    key.startsWith("test")
   );
 
   // Run each test through LLM judge
@@ -366,11 +399,11 @@ const LLMJudgeResponse = z.object({
 
 const llm_as_judge = async (
   testInstructions: string,
-  transcript: string,
+  transcript: string
 ): Promise<z.infer<typeof LLMJudgeResponse>> => {
   const prompt = `
   You are a judge that will analyze a call and determine if the call passed or failed. You are analyzing the behavior of "USER" from the call transcript.
-
+  Note, the instructions and transcript may be in a different language than english. Use your multilingual capabilities to understand the call.
 
   Here is the test instructions:
   {{ test }}
@@ -384,10 +417,10 @@ const llm_as_judge = async (
   - reasoning: string <-- this is a message that will be displayed to the user, explain your reasoning on why the test passed or failed
   `;
   const response = await openaiClient.beta.chat.completions.parse({
-    model: 'gpt-4o-2024-11-20',
+    model: "gpt-4o-2024-11-20",
     messages: [
       {
-        role: 'system',
+        role: "system",
         content: engine.parseAndRenderSync(prompt, {
           test: testInstructions,
           transcript: transcript,
@@ -395,13 +428,13 @@ const llm_as_judge = async (
         temperature: 0,
       },
     ],
-    response_format: zodResponseFormat(LLMJudgeResponse, 'judge_response'),
+    response_format: zodResponseFormat(LLMJudgeResponse, "judge_response"),
   });
 
-  return response.choices[0].message.parsed || { passed: false, reasoning: '' };
+  return response.choices[0].message.parsed || { passed: false, reasoning: "" };
 };
 
 void main().catch((error) => {
-  console.error('Error running tests:', error);
+  console.error("Error running tests:", error);
   process.exit(1);
 });
